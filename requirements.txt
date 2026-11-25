@@ -1,0 +1,6 @@
+vosk>=0.3.42
+sounddevice>=0.4.6
+python-osc>=1.8
+PyYAML>=6.0
+# native window on macOS / Windows (on Linux the control page opens in the browser)
+pywebview>=5.0; sys_platform != "linux"

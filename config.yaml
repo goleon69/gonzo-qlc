@@ -1,0 +1,66 @@
+# Gonzo - voice commands for QLC+  (example configuration)
+# Every command is spoken as:  <wake_word> <say>   e.g. "gonzo rosso"
+# 'say' can be a single phrase or a list of alternative phrases.
+
+wake_word: gonzo
+
+osc:
+  host: 127.0.0.1
+  port: 7700        # QLC+ OSC input: 7700 = universe 1, 7701 = universe 2, ...
+  pulse_ms: 80      # button press -> release delay
+
+audio:
+  device: null      # null = default mic (you can also choose it in the Gonzo window)
+  samplerate: null  # null = device default
+
+recognition:
+  min_confidence: 0.60  # raise if you get false triggers, lower if commands are missed
+  cooldown_s: 1.0       # same command ignored if repeated within this time
+  fast_trigger: false   # true = react before the end of the sentence (faster, less safe)
+  gate: 0.0             # noise gate threshold 0..1 (0 = off). Easier: click the level bar in the window
+
+commands:
+  # --- generale
+  - say: spegni tutto
+    osc: /gonzo/blackout
+  - say: accendi tutto
+    osc: /gonzo/accendi
+  - say: ferma tutto
+    osc: /gonzo/stop
+
+  # --- colori (pars + barra)
+  - { say: rosso,  osc: /gonzo/rosso }
+  - { say: blu,    osc: /gonzo/blu }
+  - { say: verde,  osc: /gonzo/verde }
+  - { say: bianco, osc: /gonzo/bianco }
+  - { say: ambra,  osc: /gonzo/ambra }
+
+  # --- scene
+  - { say: scena uno,     osc: /gonzo/scena1 }
+  - { say: scena due,     osc: /gonzo/scena2 }
+  - { say: scena tre,     osc: /gonzo/scena3 }
+  - { say: scena quattro, osc: /gonzo/scena4 }
+  - { say: scena cinque,  osc: /gonzo/scena5 }
+  - { say: scena sei,     osc: /gonzo/scena6 }
+  - { say: scena sette,   osc: /gonzo/scena7 }
+  - { say: scena otto,    osc: /gonzo/scena8 }
+  - { say: scena nove,    osc: /gonzo/scena9 }
+  - { say: scena dieci,   osc: /gonzo/scena10 }
+
+  # --- cue list
+  - { say: avanti,   osc: /gonzo/avanti }
+  - { say: indietro, osc: /gonzo/indietro }
+
+  # --- effetti
+  - { say: strobo,        osc: /gonzo/strobo }       # QLC+ button in toggle mode
+  - { say: teste accese,  osc: /gonzo/teste_on }
+  - { say: teste spente,  osc: /gonzo/teste_off }
+  - { say: lento,         osc: /gonzo/lento }
+  - { say: veloce,        osc: /gonzo/veloce }
+
+  # --- laser: voice can only switch it OFF (safety)
+  - { say: laser spento,  osc: /gonzo/laser_off }
+
+  # --- controllo app (not sent to QLC+)
+  - { say: pausa,   action: pause }    # app stops reacting
+  - { say: ascolta, action: resume }   # app reacts again

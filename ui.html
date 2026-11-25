@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gonzo</title>
+<link rel="icon" href="/icon.png">
+<style>
+  :root {
+    --bg: #0e0f12; --panel: #17191e; --line: #262a31; --text: #e8e9ec; --dim: #7c818c;
+    --green: #2ecc71; --yellow: #f1c40f; --red: #e74c3c; --blue: #3498db;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; }
+  header { display: flex; align-items: center; gap: 16px; padding: 12px 18px;
+           border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .logo { width: 40px; height: 40px; margin-right: -6px; }
+  h1 { margin: 0; font-size: 22px; letter-spacing: 2px; }
+  .ver { color: var(--dim); font-size: 13px; }
+  .pill { padding: 5px 12px; border-radius: 999px; font-weight: 700; font-size: 13px;
+          background: var(--line); }
+  .pill.listening { background: var(--green); color: #000; }
+  .pill.paused { background: var(--yellow); color: #000; }
+  .pill.error, .pill.offline { background: var(--red); }
+  .pill.keyboard { background: var(--blue); }
+  .meta { color: var(--dim); font-size: 13px; }
+  .meter { width: 120px; height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+  .meter { position: relative; cursor: pointer; height: 12px; overflow: visible; }
+  .meter b { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--yellow); display: none; }
+  .meter.closed i { background: var(--dim); }
+  .meter i { border-radius: 4px; max-width: 100%; }
+  .meter i { display: block; height: 100%; width: 0; background: var(--green); transition: width .1s; }
+  .spacer { flex: 1; }
+  button { font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line);
+           border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+  button:hover { border-color: var(--dim); }
+  button:active { transform: scale(.97); }
+  button.warn { border-color: var(--yellow); }
+  button.danger { border-color: var(--red); }
+  main { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px 18px; }
+  @media (max-width: 800px) { main { grid-template-columns: 1fr; } }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+  h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim);
+       display: flex; justify-content: space-between; align-items: center; }
+  #last { font-size: 40px; font-weight: 800; min-height: 56px; }
+  #lastosc { color: var(--dim); font-family: ui-monospace, Menlo, monospace; }
+  #log { list-style: none; margin: 0; padding: 0; max-height: 60vh; overflow-y: auto; }
+  #log li { display: grid; grid-template-columns: 70px 1fr auto; gap: 10px; padding: 6px 4px;
+            border-bottom: 1px solid var(--line); }
+  #log .t { color: var(--dim); font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
+  #log .src { color: var(--dim); font-size: 12px; }
+  #log li.fire .what { color: var(--green); font-weight: 700; }
+  #log li.lowconf .what { color: var(--yellow); }
+  #log li.ignored .what, #log li.heard .what { color: var(--dim); }
+  #log li.heard .what { font-style: italic; }
+  #log li.error .what { color: var(--red); font-weight: 700; }
+  #log li.status .what { color: var(--blue); }
+  #log li.flash { animation: flash 1s; }
+  @keyframes flash { from { background: rgba(46,204,113,.25); } to { background: transparent; } }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+  .grid button { padding: 12px 8px; text-align: center; }
+  .grid button small { display: block; color: var(--dim); font-size: 11px; margin-top: 2px; }
+  select { font: inherit; font-size: 13px; color: var(--text); background: var(--panel);
+           border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
+  select.missing { border-color: var(--red); }
+  header { gap: 12px; }
+  @media (max-width: 1340px) { #oscbox { display: none; } }
+  select { max-width: 170px; }
+  .meter { width: 100px; }
+  header button#cfgbtn { white-space: nowrap; }
+  header button { padding: 6px 11px; font-size: 14px; }
+  header button.mini { padding: 3px 8px; font-size: 13px; }
+  body.compact main { grid-template-columns: 1fr; }
+  body.compact #cmdpanel, body.compact #oscbox, body.compact #cfgbtn { display: none; }
+  body.compact header { gap: 10px; padding: 10px 12px; }
+  body.compact main { padding: 12px; }
+  body.compact #last { font-size: 32px; min-height: 46px; }
+  label.f { font-size: 13px; color: var(--dim); text-transform: none; letter-spacing: 0; }
+  #offline { display: none; background: var(--red); padding: 10px 18px; font-weight: 700; }
+</style>
+</head>
+<body>
+<div id="offline">Gonzo non è in esecuzione. Avvialo e ricarica la pagina.</div>
+<header>
+  <img src="/icon.png" alt="" class="logo"><h1>GONZO</h1><span class="ver" id="ver">v?</span>
+  <span class="pill" id="status">…</span>
+  <span class="meta" id="micbox">Mic:
+    <select id="micsel" title="microfono usato da Gonzo"></select>
+    <button id="rescanbtn" class="mini" title="rileva di nuovo i microfoni collegati">↻</button>
+  </span>
+  <div class="meter" id="meter" title="livello microfono - clic per impostare la soglia del gate"><i id="lvl"></i><b id="thr"></b></div>
+  <button id="gatebtn" class="mini" title="gate: sotto la soglia Gonzo non ascolta">Gate: off</button>
+  <span class="meta" id="oscbox">OSC: <span id="osc">-</span></span>
+  <span class="spacer"></span>
+  <button id="compactbtn" title="nasconde i pulsanti dei comandi e dimezza la finestra">Compatta</button>
+  <button id="cfgbtn" title="apre config.yaml nell'editor di testo">Comandi…</button>
+  <button id="pausebtn" class="warn">Pausa</button>
+  <button id="quitbtn" class="danger">Esci</button>
+</header>
+<main>
+  <div>
+    <section style="margin-bottom:16px">
+      <h2>Ultimo comando</h2>
+      <div id="last">—</div>
+      <div id="lastosc"></div>
+    </section>
+    <section>
+      <h2>Comandi ricevuti
+        <span>
+          <label class="f"><input type="checkbox" id="showall" checked> mostra anche scartati</label>
+          <button id="clearbtn" style="padding:3px 10px;margin-left:8px">Pulisci</button>
+        </span>
+      </h2>
+      <ul id="log"></ul>
+    </section>
+  </div>
+  <section id="cmdpanel">
+    <h2>Comandi (clic per inviare) <span class="meta" id="wake"></span></h2>
+    <div class="grid" id="cmds"></div>
+  </section>
+</main>
+<script>
+let lastId = 0, paused = false, built = false, compact = false, micKey = "", gate = 0;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const post = (url, body) => fetch(url, {method: "POST", headers: {"Content-Type": "application/json"},
+                                        body: JSON.stringify(body || {})}).catch(() => {});
+
+function describe(e) {
+  switch (e.type) {
+    case "fire":    return [e.phrase, e.osc];
+    case "lowconf": return [`${e.phrase} (incerto ${e.conf})`, "scartato"];
+    case "ignored": return [e.phrase, e.msg];
+    case "heard":   return [`sentito: "${e.msg}"`, "nessun comando"];
+    default:        return [e.msg, ""];
+  }
+}
+
+function addEvent(e) {
+  const [what, extra] = describe(e);
+  const li = document.createElement("li");
+  li.className = e.type + (e.type === "fire" ? " flash" : "");
+  li.dataset.type = e.type;
+  li.innerHTML = `<span class="t">${esc(e.t)}</span><span class="what">${esc(what)}</span>` +
+                 `<span class="src">${esc(e.type === "ignored" ? extra : (e.source || extra))}</span>`;
+  if (!$("showall").checked && e.type !== "fire") li.style.display = "none";
+  $("log").prepend(li);
+  while ($("log").children.length > 300) $("log").lastChild.remove();
+  if (e.type === "fire") {
+    $("last").textContent = e.phrase.replace(/^\S+\s/, "").toUpperCase();
+    $("lastosc").textContent = `${e.osc}   ·   ${e.t}   ·   ${e.source}`;
+  }
+}
+
+function buildCommands(s) {
+  $("wake").textContent = `di' "${s.wake} …"`;
+  $("cmds").innerHTML = "";
+  for (const c of s.commands) {
+    const b = document.createElement("button");
+    b.innerHTML = `${esc(c.say)}<small>${esc(c.osc || c.action)}</small>`;
+    b.onclick = () => post("/api/fire", {say: c.say});
+    $("cmds").appendChild(b);
+  }
+  built = true;
+}
+
+function updateMics(s) {
+  const devs = s.devices || [];
+  $("micbox").style.display = devs.length ? "" : "none";
+  const key = JSON.stringify([devs, s.mic_choice, s.mic]);
+  if (key === micKey) return;
+  micKey = key;
+  const sel = $("micsel");
+  const missing = s.mic_choice && !devs.includes(s.mic_choice);
+  sel.innerHTML = "";
+  const add = (value, label) => {
+    const o = document.createElement("option");
+    o.value = value; o.textContent = label; sel.appendChild(o);
+  };
+  add("", "Predefinito del Mac" + (!s.mic_choice && s.mic ? ` (${s.mic})` : ""));
+  for (const d of devs) add(d, d);
+  if (missing) add(s.mic_choice, s.mic_choice + " (non collegato)");
+  sel.value = s.mic_choice || "";
+  sel.classList.toggle("missing", !!missing);
+  sel.title = "In uso: " + (s.mic || "nessuno");
+}
+
+async function pollState() {
+  try {
+    const s = await (await fetch("/api/state")).json();
+    $("offline").style.display = "none";
+    $("ver").textContent = "v" + s.version;
+    document.title = `Gonzo v${s.version}`;
+    paused = s.paused;
+    const st = s.status === "error" ? "error" : s.paused ? "paused" : s.status;
+    const labels = {listening: "IN ASCOLTO", paused: "PAUSA", keyboard: "SOLO TASTIERA",
+                    starting: "AVVIO…", error: "ERRORE"};
+    $("status").className = "pill " + st;
+    $("status").textContent = labels[st] || st;
+    updateMics(s);
+    compact = !!s.compact;
+    document.body.classList.toggle("compact", compact);
+    $("compactbtn").textContent = compact ? "Espandi" : "Compatta";
+    $("osc").textContent = s.osc_target;
+    $("lvl").style.width = Math.min(100, s.level * 300) + "%";
+    $("cfgbtn").style.display = s.menu_ok ? "none" : "";   // in the app it lives in the Edit menu
+    gate = s.gate || 0;
+    const pct = Math.min(100, gate * 300);
+    $("thr").style.display = gate > 0 ? "block" : "none";
+    $("thr").style.left = pct + "%";
+    $("meter").classList.toggle("closed", gate > 0 && !s.gate_open);
+    $("gatebtn").textContent = gate > 0 ? `Gate: ${Math.round(pct)}%` : "Gate: off";
+    $("pausebtn").textContent = s.paused ? "Riprendi ascolto" : "Pausa";
+    if (!built) buildCommands(s);
+  } catch {
+    $("offline").style.display = "block";
+    $("status").className = "pill offline";
+    $("status").textContent = "OFFLINE";
+  }
+}
+
+async function pollEvents() {
+  try {
+    const evs = await (await fetch("/api/events?since=" + lastId)).json();
+    for (const e of evs) { addEvent(e); lastId = e.id; }
+  } catch {}
+}
+
+$("pausebtn").onclick = () => post(paused ? "/api/resume" : "/api/pause");
+let quitArmed = null;   // two clicks to quit (no confirm() popup: works in the app window too)
+$("quitbtn").onclick = () => {
+  if (quitArmed) { clearTimeout(quitArmed); post("/api/quit"); $("quitbtn").textContent = "Chiusura…"; return; }
+  $("quitbtn").textContent = "Clic di nuovo per uscire";
+  quitArmed = setTimeout(() => { quitArmed = null; $("quitbtn").textContent = "Esci"; }, 3000);
+};
+$("micsel").onchange = () => post("/api/mic", {device: $("micsel").value || null});
+$("meter").onclick = ev => {
+  const r = $("meter").getBoundingClientRect();
+  const pct = Math.max(2, Math.min(100, (ev.clientX - r.left) / r.width * 100));
+  post("/api/gate", {value: pct / 300});
+};
+$("gatebtn").onclick = () => post("/api/gate", {value: gate > 0 ? 0 : 0.25 / 3});
+$("rescanbtn").onclick = () => post("/api/rescan");
+$("compactbtn").onclick = () => post("/api/compact", {on: !compact});
+$("cfgbtn").onclick = () => post("/api/open_config");
+$("clearbtn").onclick = () => { $("log").innerHTML = ""; };
+$("showall").onchange = () => {
+  for (const li of $("log").children)
+    li.style.display = ($("showall").checked || li.dataset.type === "fire") ? "" : "none";
+};
+
+pollState(); pollEvents();
+setInterval(pollState, 250);
+setInterval(pollEvents, 250);
+</script>
+</body>
+</html>
