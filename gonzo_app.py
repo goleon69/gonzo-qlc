@@ -2,6 +2,7 @@
 # Gonzo - voice control for QLC+  |  Copyright (C) 2026 Leonardo Gon  |  GPL-3.0-or-later
 """Gonzo as a Mac app: same engine as gonzo.py, shown in its own native window
 (no Terminal, no browser). Built into Gonzo.app by build_app.sh."""
+import os
 import sys
 import threading
 import time
@@ -95,7 +96,39 @@ def add_edit_menu_item(app):
         print(f"menu item not added: {e}", flush=True)
 
 
+def windows_unblock():
+    """Files extracted from a downloaded zip carry Windows' "downloaded from the internet"
+    mark (Zone.Identifier). .NET then refuses to load pywebview's DLLs ("Failed to resolve
+    Python.Runtime.Loader.Initialize"). Remove the mark from Gonzo's own files."""
+    if sys.platform != "win32" or not gonzo.FROZEN:
+        return
+    root = os.path.dirname(sys.executable)
+    removed = 0
+    for folder, _dirs, files in os.walk(root):
+        for name in files:
+            try:
+                os.remove(os.path.join(folder, name) + ":Zone.Identifier")
+                removed += 1
+            except OSError:
+                pass
+    if removed:
+        print(f"unblocked {removed} downloaded files", flush=True)
+
+
+def run_in_browser(holder, url):
+    """Fallback when the native window cannot start: same page in the default browser."""
+    import webbrowser
+    print("native window failed - using the browser:\n" + traceback.format_exc(), flush=True)
+    webbrowser.open(url)
+    try:
+        while holder.get("app") is not None and holder["app"].running:
+            time.sleep(0.5)
+    except KeyboardInterrupt:
+        pass
+
+
 def main():
+    windows_unblock()
     if webview is None:
         # no native window available: same app, control page in the default browser.
         # "Esci" in the page quits.
@@ -171,7 +204,12 @@ def main():
 
     if sys.platform == "darwin":
         set_dock_identity()
-    webview.start(watcher)          # blocks until the window is closed
+    try:
+        webview.start(watcher)      # blocks until the window is closed
+    except Exception:
+        if not url:
+            raise
+        run_in_browser(holder, url)
     app = holder.get("app")
     if app is not None:
         app.running = False         # stops the mic loop

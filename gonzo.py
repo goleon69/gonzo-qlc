@@ -37,7 +37,7 @@ from urllib.parse import parse_qs, urlparse
 import yaml
 from pythonosc.udp_client import SimpleUDPClient
 
-VERSION = "1.7.0"
+VERSION = "1.7.1"
 FROZEN = getattr(sys, "frozen", False)          # True inside the packaged app
 # read-only resources (ui.html, model, default config)
 BASE = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))

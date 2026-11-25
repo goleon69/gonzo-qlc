@@ -38,7 +38,7 @@ Non sai che Mac hai? Menu Apple → *Informazioni su questo Mac*: "Chip Apple" o
 3. Consenti l'accesso al **microfono** quando richiesto.
 
 ### Windows
-1. Estrai lo zip (tasto destro → *Estrai tutto*), per esempio in `Documenti\Gonzo`.
+1. Tasto destro sullo zip → *Proprietà* → spunta **Sblocca** → OK. Poi tasto destro → *Estrai tutto*, per esempio in `Documenti\Gonzo`.
 2. Avvia **Gonzo.exe**. Se compare "Windows ha protetto il PC": *Ulteriori informazioni* → **Esegui comunque**.
 3. Se Gonzo non sente nulla: *Impostazioni → Privacy e sicurezza → Microfono* → consenti l'accesso alle app desktop.
 
