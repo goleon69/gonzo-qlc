@@ -1,0 +1,92 @@
+# Builds Gonzo for macOS (Intel + Apple Silicon), Windows and Linux.
+# - Every push to main and every manual run: the apps are attached to the run as "artifacts".
+# - Pushing a tag like v1.7.0: the apps are also published as a GitHub Release.
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+env:
+  MODEL: vosk-model-small-it-0.22
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15-intel
+            name: macOS-Intel
+          - os: macos-15
+            name: macOS-AppleSilicon
+          - os: windows-latest
+            name: Windows
+          - os: ubuntu-22.04
+            name: Linux-x86_64
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Linux audio library
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libportaudio2
+
+      - name: Python packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-build.txt
+
+      - name: Speech model
+        run: |
+          curl -L --fail -o model.zip "https://alphacephei.com/vosk/models/${MODEL}.zip"
+          python -m zipfile -e model.zip .
+          mv "${MODEL}" model
+          rm model.zip
+
+      - name: Build
+        run: pyinstaller --noconfirm gonzo.spec
+
+      - name: Package (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          codesign --force --deep --sign - dist/Gonzo.app
+          ditto -c -k --keepParent dist/Gonzo.app "Gonzo-${{ matrix.name }}.zip"
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        run: 7z a "Gonzo-${{ matrix.name }}.zip" ./dist/Gonzo
+
+      - name: Package (Linux)
+        if: runner.os == 'Linux'
+        run: tar -czf "Gonzo-${{ matrix.name }}.tar.gz" -C dist Gonzo
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Gonzo-${{ matrix.name }}
+          path: Gonzo-${{ matrix.name }}.*
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: out/*
+          generate_release_notes: true
