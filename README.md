@@ -5,6 +5,8 @@
 **Gonzo** permette di comandare le luci di [QLC+](https://www.qlcplus.org/) con la voce, durante le prove e sul palco.
 Dici **"gonzo rosso"**, **"gonzo scena tre"**, **"gonzo spegni tutto"** e Gonzo preme il pulsante giusto della Virtual Console di QLC+.
 
+Di solito i comandi li dà **il batterista**, con un headset: ha le mani occupate ma la voce libera, e vede tutto il palco.
+
 - **Offline**: il riconoscimento vocale ([Vosk](https://alphacephei.com/vosk/)) gira sul computer, senza internet.
 - **In italiano**, con parola d'attivazione ("gonzo") e un elenco chiuso di comandi: meno falsi comandi con la band che suona.
 - **Gate regolabile**: sotto la soglia Gonzo non ascolta.
@@ -42,13 +44,21 @@ Non sai che Mac hai? Menu Apple → *Informazioni su questo Mac*: "Chip Apple" o
 2. Avvia **Gonzo.exe**. Se compare "Windows ha protetto il PC": *Ulteriori informazioni* → **Esegui comunque**.
 3. Se Gonzo non sente nulla: *Impostazioni → Privacy e sicurezza → Microfono* → consenti l'accesso alle app desktop.
 
-### Linux
+### Linux (sperimentale)
+Avvialo da un terminale (il doppio clic sul file di solito non funziona):
 ```bash
-sudo apt install libportaudio2        # libreria audio (Debian/Ubuntu)
+sudo apt install libportaudio2        # libreria audio (Debian/Ubuntu), una volta sola
 tar -xzf Gonzo-Linux-x86_64.tar.gz
 ./Gonzo/Gonzo
 ```
-Su Linux la finestra di Gonzo si apre nel browser (stessa interfaccia). Per chiudere usa **Esci** nella pagina.
+Su Linux l'interfaccia di Gonzo si apre nel browser; se non si apre da sola, vai su **http://127.0.0.1:8765**. Lascia aperto il terminale; per chiudere usa **Esci** nella pagina.
+Richiede Ubuntu 22.04 o più recente (o una distribuzione equivalente).
+
+### Disinstallare
+Gonzo non installa nulla nel sistema: basta cancellare l'app e la cartella delle impostazioni.
+- **macOS**: Gonzo.app e `~/Library/Application Support/Gonzo`
+- **Windows**: la cartella Gonzo estratta e `%APPDATA%\Gonzo`
+- **Linux**: la cartella Gonzo estratta e `~/.config/gonzo`
 
 ---
 
@@ -59,20 +69,28 @@ Su Linux la finestra di Gonzo si apre nel browser (stessa interfaccia). Per chiu
 3. **Collega il pulsante a Gonzo** – Proprietà del pulsante → *Controlli esterni* → **Auto Detect**, poi clicca lo stesso comando nella finestra di Gonzo: QLC+ registra il percorso OSC (es. `/gonzo/rosso`).
 4. **Modalità** – Usa **Toggle**. Per i colori metti i pulsanti in un **Solo Frame**: un solo colore acceso alla volta.
 
-Chiudi QLC+ prima di usare `osc_monitor.py` per i test: usano la stessa porta.
+<p align="center"><img src="screenshot-virtual-console.png" width="420" alt="Virtual Console di QLC+ comandata da Gonzo"></p>
+<p align="center"><em>Virtual Console di QLC+ comandata da Gonzo: i pulsanti sono in un Solo Frame, quello verde è attivo ("tutto rosso").</em></p>
 
 ---
 
 ## 3. Usare Gonzo
 
+<p align="center"><img src="screenshot-gonzo-qlc.png" alt="QLC+ e Gonzo affiancati"></p>
+<p align="center"><em>QLC+ a sinistra e Gonzo in versione compatta a destra: "gonzo rosso" ha acceso le luci rosse.</em></p>
+
 - Parla così: **"gonzo" + comando** (es. "gonzo scena due").
+- **Chi parla**: di solito il batterista, con un headset collegato al computer.
 - **Microfono**: sceglilo dal menu in alto. Meglio un headset o un microfono vicino alla bocca: il microfono interno del computer sente troppo la band.
 - **Gate**: con la band che suona e nessuno che parla, clicca sulla barra del livello poco più a destra di dove arriva. La barra diventa grigia quando il gate è chiuso, verde quando ascolta.
 - **Comandi**: lista verde = eseguiti, gialla = scartati perché incerti, grigia = frasi senza comando.
 - **Pausa** blocca solo la voce; clic e tastiera funzionano sempre.
 - **Compatta** nasconde i pulsanti e dimezza la finestra, per affiancarla a QLC+.
 
-### Modificare i comandi
+---
+
+## 4. Modificare i comandi
+
 *Modifica comandi…* (su Mac nel menu **Edit**, `Cmd+,`; su Windows e Linux il pulsante **Comandi…**) apre `config.yaml`. Dopo le modifiche riavvia Gonzo.
 
 ```yaml
@@ -91,21 +109,6 @@ Dove si trova `config.yaml`:
 - Linux: `~/.config/gonzo/`
 
 Nella stessa cartella ci sono `settings.json` (microfono, gate, vista compatta) e `gonzo.log` (utile per capire cosa ha sentito Gonzo).
-
----
-
-## 4. Dal codice sorgente (sviluppatori)
-
-Serve Python 3.10+.
-```bash
-./setup.sh        # macOS / Linux: ambiente Python + modello italiano (~50 MB)
-./run.sh          # avvia Gonzo
-```
-Opzioni utili di `gonzo.py`: `--list-devices`, `--device N`, `--dry-run`, `--no-mic`, `--print-grammar`.
-`osc_monitor.py` mostra i messaggi OSC inviati, per provare senza QLC+.
-Su Mac, `make_app.sh` crea un piccolo Gonzo.app che avvia la versione sorgente.
-
-Le app vengono costruite automaticamente da GitHub Actions (`.github/workflows/build.yml`) con PyInstaller (`gonzo.spec`). Un tag `vX.Y.Z` pubblica una nuova Release.
 
 ---
 
