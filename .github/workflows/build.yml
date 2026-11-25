@@ -31,9 +31,9 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -64,13 +64,24 @@ jobs:
 
       - name: Package (Windows)
         if: runner.os == 'Windows'
-        run: 7z a "Gonzo-${{ matrix.name }}.zip" ./dist/Gonzo
+        run: |
+          # let .NET (used by the native window) load the app's own DLLs even when
+          # Windows marks the extracted files as "downloaded from the internet"
+          cat > dist/Gonzo/Gonzo.exe.config <<'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration>
+            <runtime>
+              <loadFromRemoteSources enabled="true"/>
+            </runtime>
+          </configuration>
+          XML
+          7z a "Gonzo-${{ matrix.name }}.zip" ./dist/Gonzo
 
       - name: Package (Linux)
         if: runner.os == 'Linux'
         run: tar -czf "Gonzo-${{ matrix.name }}.tar.gz" -C dist Gonzo
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: Gonzo-${{ matrix.name }}
           path: Gonzo-${{ matrix.name }}.*
@@ -82,7 +93,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: out
           merge-multiple: true
